@@ -53,33 +53,33 @@ local function track_and_preserve(motion_type, key, mode)
 end
 
 local function setup_motion_tracking()
+  -- Basic word motions
   for _, motion in ipairs { 'w', 'b', 'e', 'ge' } do
     track_and_preserve('basic', motion)
   end
 
-  -- TODO: maybe use the actual name lol?
-  for key, _ in pairs {
-    ['<C-d>'] = 'ctrl-d',
-    ['<C-u>'] = 'ctrl-u',
-    ['<C-f>'] = 'ctrl-f',
-    ['<C-b>'] = 'ctrl-b',
-  } do
-    track_and_preserve('scroll', key)
+  -- Scrolling
+  for _, motion in ipairs { '<C-d>', '<C-u>', '<C-f>', '<C-b>' } do
+    track_and_preserve('scroll', motion)
   end
 
-  -- NOTE: special behaviour because of nr2char
+  -- Find/till
   for _, motion in ipairs { 'f', 'F', 't', 'T' } do
-    vim.keymap.set('n', motion, function()
-      track_motion('find', motion)
-      return motion .. vim.fn.nr2char(vim.fn.getchar())
-    end, { expr = true })
+    track_and_preserve('find', motion)
   end
 
+  -- Search
   for _, motion in ipairs { '*', '#', 'n', 'N' } do
     track_and_preserve('search', motion)
   end
 
   -- TODO: track more motions
+  -- Paragraph
+  -- Line
+  -- Window movement
+  -- Marks
+  -- Tags
+  -- Jumps
 end
 
 function M.start()
