@@ -25,16 +25,11 @@ function M.show_stats()
 
   local lines = {
     'stalker.nvim session stats',
+    '--------------------------',
   }
 
-  local duration = os.time() - stats.session_start
-  table.insert(lines, string.format('Session: %02d:%02d:%02d', duration / 3600, (duration % 3600) / 60, duration % 60))
-
-  table.insert(lines, 'Mode Switches:')
-  for mode, count in pairs(stats.mode_switches) do
-    local entry = string.format('%s: %d', mode, count)
-    table.insert(lines, entry)
-  end
+  local stats_lines = vim.split(vim.inspect(stats), '\n', { plain = true })
+  vim.list_extend(lines, stats_lines)
 
   local buf = vim.api.nvim_create_buf(false, true)
   vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
