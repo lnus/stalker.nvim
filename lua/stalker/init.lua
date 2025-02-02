@@ -28,7 +28,7 @@ function M.setup(opts)
     end, { desc = 'Show stalker.nvim statistics' })
 
     vim.api.nvim_create_user_command('StalkerTotals', function()
-      M.show_totals()()
+      M.show_totals()
     end, { desc = 'Show stalker.nvim total stats' })
 
     vim.defer_fn(function()
@@ -70,7 +70,7 @@ function M.show_totals()
   if totals then
     local lines = {
       'stalker.nvim total stats',
-      '----------------------',
+      '------------------------',
     }
 
     local stats_lines = vim.split(vim.inspect(totals), '\n', { plain = true })

@@ -1,12 +1,13 @@
 local M = {}
 
-local storage_path = vim.fs.normalize(vim.fn.stdpath 'data' .. '/stalker')
+local data_path = tostring(vim.fn.stdpath 'data')
+local storage_path = vim.fs.joinpath(data_path, 'stalker')
 local sessions_path = vim.fs.joinpath(storage_path, 'sessions')
 local totals_path = vim.fs.joinpath(storage_path, 'totals.json')
 
 local function ensure_dirs()
   for _, path in ipairs { storage_path, sessions_path } do
-    if vim.uv.fs_stat(path) then
+    if not vim.uv.fs_stat(path) then
       vim.fn.mkdir(path, 'p')
     end
   end
@@ -39,7 +40,8 @@ function M.load_totals()
   end
 
   -- Return empty stats structure if no totals exist
-  -- TODO: Make more dynamic?
+  -- TODO: Make more dynamic? Two sources of truth for the shape rn
+  -- Either that or just return none?
   return {
     mode_switches = {},
     motions = {
