@@ -28,6 +28,15 @@ function M.setup(opts)
       local current_stats = stats.get_stats()
       storage.save_session(current_stats)
       storage.update_totals(current_stats, totals)
+
+      -- force webhook push if needed
+      if config.web_hook then
+        storage.send_to_webhook {
+          timestamp = os.time(),
+          stats = current_stats,
+          event_type = 'session_end',
+        }
+      end
     end,
   })
 
@@ -60,7 +69,8 @@ function M.show_stats()
     '--------------------------',
   }
 
-  local stats_lines = vim.split(vim.inspect(current_stats), '\n', { plain = true })
+  local stats_lines =
+    vim.split(vim.inspect(current_stats), '\n', { plain = true })
   vim.list_extend(lines, stats_lines)
 
   local buf = vim.api.nvim_create_buf(false, true)

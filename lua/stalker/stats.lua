@@ -49,10 +49,6 @@ local function track_and_preserve(motion_type, key, mode)
   local existing = get_existing_mapping(key, mode)
 
   vim.keymap.set(mode, key, function()
-    if config.spam_me then
-      vim.notify(config.config_value)
-    end
-
     track_motion(motion_type, key)
     return existing
   end, { expr = true })
@@ -93,7 +89,11 @@ end
 function M.test_config()
   -- Access the config directly through the local reference
   vim.notify(
-    string.format('spam_me is: %s\nconfig_value is: %s', tostring(config.spam_me), tostring(config.config_value)),
+    string.format(
+      'spam_me is: %s\nconfig_value is: %s',
+      tostring(config.spam_me),
+      tostring(config.config_value)
+    ),
     vim.log.levels.INFO
   )
 end
