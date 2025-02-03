@@ -2,42 +2,57 @@ local M = {}
 
 local storage = require 'stalker.storage'
 local stats = require 'stalker.stats'
+local config = require('stalker.config').config
 local totals = nil
 
-M.config = { enabled = true }
+-- TODO: Move to util file or something
+function M.debug_log(message)
+  if not config.spam_me then
+    return
+  end
+
+  vim.notify('stalker.nvim: ' .. message, vim.log.levels.INFO)
+end
 
 function M.setup(opts)
-  M.config = vim.tbl_deep_extend('force', M.config, opts or {})
+  require('stalker.config').set_defaults(opts or {})
 
-  if M.config.enabled then
-    totals = storage.init()
-
-    -- Set up VimLeavePre to save session and update totals
-    vim.api.nvim_create_autocmd('VimLeavePre', {
-      callback = function()
-        local current_stats = stats.get_stats()
-        storage.save_session(current_stats)
-        storage.update_totals(current_stats, totals)
-      end,
-    })
-
-    stats.start()
-
-    vim.api.nvim_create_user_command('Stalker', function()
-      M.show_stats()
-    end, { desc = 'Show stalker.nvim statistics' })
-
-    vim.api.nvim_create_user_command('StalkerTotals', function()
-      M.show_totals()
-    end, { desc = 'Show stalker.nvim total stats' })
-
-    vim.defer_fn(function()
-      vim.notify('stalker.nvim is watching you... (⊙_⊙)', vim.log.levels.INFO)
-    end, 100) -- ensure ui is ready
+  if not config.enabled then
+    return
   end
+
+  totals = storage.init()
+
+  vim.api.nvim_create_autocmd('VimLeavePre', {
+    callback = function()
+      local current_stats = stats.get_stats()
+      storage.save_session(current_stats)
+      storage.update_totals(current_stats, totals)
+    end,
+  })
+
+  vim.api.nvim_create_autocmd('UIEnter', {
+    callback = function()
+      vim.defer_fn(function()
+        M.debug_log "i'm watching you... (⊙_⊙)"
+      end, 200)
+    end,
+  })
+
+  stats.start()
+
+  vim.api.nvim_create_user_command('Stalker', function()
+    M.show_stats()
+  end, { desc = 'Show stalker.nvim statistics' })
+
+  vim.api.nvim_create_user_command('StalkerTotals', function()
+    M.show_totals()
+  end, { desc = 'Show stalker.nvim total stats' })
 end
 
 function M.show_stats()
+  M.debug_log 'opening current stats floating window'
+
   local current_stats = stats.get_stats()
 
   local lines = {
@@ -67,6 +82,8 @@ function M.show_stats()
 end
 
 function M.show_totals()
+  M.debug_log 'opening total stats floating window'
+
   if totals then
     local lines = {
       'stalker.nvim total stats',
