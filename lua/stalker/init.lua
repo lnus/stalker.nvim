@@ -26,12 +26,15 @@ function M.setup(opts)
   vim.api.nvim_create_autocmd('VimLeavePre', {
     callback = function()
       local current_stats = stats.get_stats()
-      storage.save_session(current_stats)
-      storage.update_totals(current_stats, totals)
 
-      -- force webhook push if needed
-      if config.web_hook then
-        storage.send_to_webhook {
+      if config.store_locally then
+        storage.save_session(current_stats)
+        storage.update_totals(current_stats, totals)
+      end
+
+      -- force sync push if needed
+      if config.sync_endpoint then
+        storage.sync_to_endpoint {
           timestamp = os.time(),
           stats = current_stats,
           event_type = 'session_end',
@@ -60,8 +63,6 @@ function M.setup(opts)
 end
 
 function M.show_stats()
-  M.debug_log 'opening current stats floating window'
-
   local current_stats = stats.get_stats()
 
   local lines = {
@@ -92,8 +93,6 @@ function M.show_stats()
 end
 
 function M.show_totals()
-  M.debug_log 'opening total stats floating window'
-
   if totals then
     local lines = {
       'stalker.nvim total stats',

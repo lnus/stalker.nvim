@@ -22,8 +22,8 @@ local function ensure_dirs()
   end
 end
 
-function M.send_to_webhook(data)
-  if not config.web_hook then
+function M.sync_to_endpoint(data)
+  if not config.sync_endpoint then
     return
   end
 
@@ -35,15 +35,15 @@ function M.send_to_webhook(data)
     'Content-Type: application/json',
     '-d',
     vim.json.encode(data),
-    config.web_hook,
+    config.sync_endpoint,
   }, {
     on_exit = function(_, code)
       if code ~= 0 then
         vim.notify(
           string.format(
-            'Stalker webhook failed (code %d) for %s',
+            'Stalker: Syncing failed with code %d for %s',
             code,
-            config.web_hook
+            config.sync_endpoint
           ),
           vim.log.levels.ERROR
         )
@@ -52,7 +52,7 @@ function M.send_to_webhook(data)
   })
 
   if job_id <= 0 then
-    vim.notify('Stalker: Failed to start webhook job', vim.log.levels.ERROR)
+    vim.notify('Stalker: Failed to start sync job', vim.log.levels.ERROR)
   end
 end
 
@@ -65,11 +65,12 @@ local function maybe_sync(stats, force)
   if should_sync then
     last_sync = current_time
 
-    -- Save to disk
-    M.save_session(stats)
+    if config.store_locally then
+      M.save_session(stats)
+    end
 
-    if config.web_hook then
-      M.send_to_webhook {
+    if config.sync_endpoint then
+      M.sync_to_endpoint {
         timestamp = current_time,
         stats = stats,
         event_type = 'periodic_sync',
