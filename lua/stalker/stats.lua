@@ -6,13 +6,15 @@ M.stats_shape = {
   mode_switches = {},
   current_mode = 'n',
   motions = {
-    basic = {},
+    nav = {},
+    word = {},
     find = {},
     scroll = {},
     search = {},
     paragraph = {},
     line = {},
     indent = {},
+    jumps = {},
   },
 }
 
@@ -22,13 +24,15 @@ local stats = vim.tbl_deep_extend('force', {
 
 -- TODO: track more motions
 local motion_groups = {
-  basic = { 'w', 'b', 'e', 'ge' },
+  nav = { 'h', 'j', 'k', 'l' },
+  word = { 'w', 'b', 'e', 'ge' },
   scroll = { '<C-d>', '<C-u>', '<C-f>', '<C-b>' },
   find = { 'f', 'F', 't', 'T' },
   search = { '*', '#', 'n', 'N' },
   paragraph = { '{', '}' },
   line = { '0', '$', '^', 'g_' },
   indent = { '>', '<', '=', '>>', '<<' },
+  jumps = { 'gi', 'gv', '<C-o>', '<C-i>', 'g;', 'g,' },
 }
 
 local function track_mode_change()
