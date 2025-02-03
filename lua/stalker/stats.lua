@@ -2,17 +2,33 @@ local M = {}
 
 local config = require('stalker.config').config
 
-local stats = {
-  session_start = os.time(),
+M.stats_shape = {
   mode_switches = {},
-  current_mode = 'n', -- default to normal mode
-
+  current_mode = 'n',
   motions = {
-    basic = {}, -- w,b,e,ge
-    find = {}, -- f,F,t,T
-    scroll = {}, -- ctrl-d, ctrl-u, etc
-    search = {}, -- n,N,*,#
+    basic = {},
+    find = {},
+    scroll = {},
+    search = {},
+    paragraph = {},
+    line = {},
+    indent = {},
   },
+}
+
+local stats = vim.tbl_deep_extend('force', {
+  session_start = os.time(),
+}, M.stats_shape)
+
+-- TODO: track more motions
+local motion_groups = {
+  basic = { 'w', 'b', 'e', 'ge' },
+  scroll = { '<C-d>', '<C-u>', '<C-f>', '<C-b>' },
+  find = { 'f', 'F', 't', 'T' },
+  search = { '*', '#', 'n', 'N' },
+  paragraph = { '{', '}' },
+  line = { '0', '$', '^', 'g_' },
+  indent = { '>', '<', '=', '>>', '<<' },
 }
 
 local function track_mode_change()
@@ -55,63 +71,27 @@ local function track_and_preserve(motion_type, key, mode)
 end
 
 local function setup_motion_tracking()
-  -- Basic word motions
-  for _, motion in ipairs { 'w', 'b', 'e', 'ge' } do
-    track_and_preserve('basic', motion)
+  for group, motions in pairs(motion_groups) do
+    for _, motion in ipairs(motions) do
+      track_and_preserve(group, motion)
+    end
   end
-
-  -- Scrolling
-  for _, motion in ipairs { '<C-d>', '<C-u>', '<C-f>', '<C-b>' } do
-    track_and_preserve('scroll', motion)
-  end
-
-  -- Find/till
-  for _, motion in ipairs { 'f', 'F', 't', 'T' } do
-    track_and_preserve('find', motion)
-  end
-
-  -- Search
-  for _, motion in ipairs { '*', '#', 'n', 'N' } do
-    track_and_preserve('search', motion)
-  end
-
-  -- TODO: track more motions
-  -- Paragraph
-  -- Line
-  -- Window movement
-  -- Marks
-  -- Tags
-  -- Jumps
-end
-
--- TODO: Remove this
--- It's just debug config stuff for now
-function M.test_config()
-  -- Access the config directly through the local reference
-  vim.notify(
-    string.format(
-      'spam_me is: %s\nconfig_value is: %s',
-      tostring(config.spam_me),
-      tostring(config.config_value)
-    ),
-    vim.log.levels.INFO
-  )
 end
 
 function M.start()
   local group = vim.api.nvim_create_augroup('Stalker', { clear = true })
 
-  vim.api.nvim_create_autocmd('ModeChanged', {
-    group = group,
-    pattern = '*',
-    callback = track_mode_change,
-  })
+  if config.tracking.motions then
+    setup_motion_tracking()
+  end
 
-  vim.api.nvim_create_user_command('StalkerTestConfig', function()
-    M.test_config()
-  end, { desc = 'Test stalker config persistence' })
-
-  setup_motion_tracking()
+  if config.tracking.modes then
+    vim.api.nvim_create_autocmd('ModeChanged', {
+      group = group,
+      pattern = '*',
+      callback = track_mode_change,
+    })
+  end
 end
 
 function M.get_stats()

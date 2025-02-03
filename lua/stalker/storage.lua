@@ -135,23 +135,9 @@ function M.load_totals()
     end
   end
 
-  -- Return empty stats structure if no totals exist
-  -- TODO: Make more dynamic? Two sources of truth for the shape rn
-  -- Either that or just return none?
-  return {
-    mode_switches = {},
-    motions = {
-      basic = {},
-      find = {},
-      scroll = {},
-      search = {},
-    },
-    total_sessions = 0,
-    total_time = 0,
-  }
+  return vim.deepcopy(require('stalker.stats').stats_shape)
 end
 
--- TODO: Should this send to webhook as well?
 function M.update_totals(stats, totals)
   for mode, count in pairs(stats.mode_switches) do
     totals.mode_switches[mode] = (totals.mode_switches[mode] or 0) + count
@@ -165,8 +151,9 @@ function M.update_totals(stats, totals)
     end
   end
 
-  totals.total_sessions = totals.total_sessions + 1
-  totals.total_time = totals.total_time + (os.time() - stats.session_start)
+  totals.total_sessions = (totals.total_sessions or 0) + 1
+  totals.total_time = (totals.total_time or 0)
+    + (os.time() - stats.session_start)
 
   local file = io.open(totals_path, 'w')
   if file then

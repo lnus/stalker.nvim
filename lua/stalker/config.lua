@@ -6,23 +6,21 @@ M.config = {
   web_hook = nil, -- Optional webhook endpoint
   sync_interval = 10, -- Backup flush timer in seconds
   config_value = '', -- Just some testing stuff
-  tracking = { -- TODO: Make these work lol
+  tracking = {
     motions = true,
     modes = true,
-    commands = true,
   },
 }
 
--- https://github.com/m4xshen/hardtime.nvim/tree/main
+-- inspo from https://github.com/m4xshen/hardtime.nvim/tree/main
 function M.set_defaults(deps)
   for option, value in pairs(deps) do
-    if type(value) == 'table' and #value == 0 then
+    if type(value) == 'table' then
+      if type(M.config[option]) ~= 'table' then
+        M.config[option] = {}
+      end
       for k, v in pairs(value) do
-        if next(v) == nil then
-          M.config[option][k] = nil
-        else
-          M.config[option][k] = v
-        end
+        M.config[option][k] = v
       end
     else
       M.config[option] = value
