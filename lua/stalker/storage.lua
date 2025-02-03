@@ -6,13 +6,12 @@ local storage_path = vim.fs.joinpath(data_path, 'stalker')
 local sessions_path = vim.fs.joinpath(storage_path, 'sessions')
 local totals_path = vim.fs.joinpath(storage_path, 'totals.json')
 
+local MAX_RETRIES = 3
+local sync_failures = 0
+local halt_sync = false
 local last_sync = os.time()
-local current_session_id = string.format(
-  '%s_%s_%s',
-  os.date '%Y%m%d_%H%M%S',
-  vim.fn.hostname(),
-  vim.fn.getpid()
-)
+local current_session_id =
+  string.format('%s_%s', os.date '%Y%m%d_%H%M%S', vim.fn.getpid())
 
 local function ensure_dirs()
   for _, path in ipairs { storage_path, sessions_path } do
@@ -22,38 +21,81 @@ local function ensure_dirs()
   end
 end
 
+function M.reset_sync_state(notify)
+  halt_sync = false
+  sync_failures = 0
+
+  if notify then
+    vim.notify(
+      'Stalker: Sync state reset, will attempt syncing again',
+      vim.log.levels.INFO
+    )
+  end
+end
+
 function M.sync_to_endpoint(data)
-  if not config.sync_endpoint then
+  if not config.sync_endpoint or halt_sync then
     return
   end
 
-  local job_id = vim.fn.jobstart({
-    'curl',
-    '-X',
-    'POST',
-    '-H',
-    'Content-Type: application/json',
-    '-d',
-    vim.json.encode(data),
-    config.sync_endpoint,
-  }, {
-    on_exit = function(_, code)
-      if code ~= 0 then
-        vim.notify(
-          string.format(
-            'Stalker: Syncing failed with code %d for %s',
-            code,
-            config.sync_endpoint
-          ),
-          vim.log.levels.ERROR
-        )
-      end
-    end,
-  })
+  halt_sync = true -- prevent parallel attempts
 
-  if job_id <= 0 then
-    vim.notify('Stalker: Failed to start sync job', vim.log.levels.ERROR)
+  local function attempt_sync(retry_count)
+    local job_id = vim.fn.jobstart({
+      'curl',
+      '-X',
+      'POST',
+      '-H',
+      'Content-Type: application/json',
+      '-d',
+      vim.json.encode(data),
+      config.sync_endpoint,
+    }, {
+      on_exit = function(_, code)
+        if code ~= 0 then
+          sync_failures = sync_failures + 1
+
+          if sync_failures >= MAX_RETRIES then
+            halt_sync = true
+            vim.notify(
+              string.format(
+                'Stalker: Sync failed %d times, disabling (%s)',
+                MAX_RETRIES,
+                config.sync_endpoint
+              ),
+              vim.log.levels.ERROR
+            )
+            return
+          end
+
+          -- exponential backoff
+          local delay = math.pow(2, retry_count) * 1000
+          vim.notify(
+            string.format(
+              'Stalker: Sync attempt %d failed (%d), retrying in %dms...',
+              retry_count + 1,
+              code,
+              delay
+            ),
+            vim.log.levels.WARN
+          )
+
+          vim.defer_fn(function()
+            attempt_sync(retry_count + 1)
+          end, delay)
+        else
+          M.reset_sync_state(false)
+        end
+      end,
+    })
+
+    if job_id <= 0 then
+      vim.notify('Stalker: Failed to start sync job', vim.log.levels.ERROR)
+      M.reset_sync_state(false)
+    end
   end
+
+  attempt_sync(0)
 end
 
 local function maybe_sync(stats, force)
@@ -92,9 +134,6 @@ function M.init()
 
     local interval = (config.sync_interval or 30) * 1000
     local success, err = pcall(function()
-      -- TODO: I feel like this makes sense to run until nvim closes
-      -- Since we also have a hook to log on VimLeavePre
-      -- But maybe I should clean this up? Module ref timer?
       timer:start(
         interval,
         interval,

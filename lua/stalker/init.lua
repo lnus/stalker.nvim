@@ -60,6 +60,10 @@ function M.setup(opts)
   vim.api.nvim_create_user_command('StalkerTotals', function()
     M.show_totals()
   end, { desc = 'Show stalker.nvim total stats' })
+
+  vim.api.nvim_create_user_command('StalkerResetSync', function()
+    storage.reset_sync_state(true)
+  end, { desc = 'Reset stalker sync state after failures' })
 end
 
 function M.show_stats()
