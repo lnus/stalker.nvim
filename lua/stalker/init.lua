@@ -22,6 +22,7 @@ local function setup_commands()
   end, { desc = 'Reset stalker sync state after failures' })
 end
 
+-- TODO: Put into augroup as in stats.lua+86
 local function setup_autocmds()
   vim.api.nvim_create_autocmd('VimLeavePre', {
     callback = function()
@@ -45,7 +46,7 @@ local function setup_autocmds()
   vim.api.nvim_create_autocmd('UIEnter', {
     callback = function()
       vim.defer_fn(function()
-        util.debug_log "i'm watching you... (⊙_⊙)"
+        util.debug "i'm watching you... (⊙_⊙)"
       end, 200)
     end,
   })
@@ -53,10 +54,6 @@ end
 
 function M.setup(opts)
   require('stalker.config').set_defaults(opts or {})
-
-  if not config.enabled then
-    return
-  end
 
   totals = storage.init()
   stats.start()

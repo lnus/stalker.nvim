@@ -39,6 +39,7 @@ local function track_mode_change()
   local new_mode = vim.api.nvim_get_mode().mode
 
   -- increment the raw mode count
+  -- TODO: maybe remove this?
   stats.mode_switches[new_mode] = (stats.mode_switches[new_mode] or 0) + 1
 
   -- create the transition and increment that

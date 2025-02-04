@@ -1,11 +1,10 @@
 local M = {}
 
 M.config = {
-  enabled = true, -- Debug option
-  spam_me = false, -- Dev mode for notify stuff
-  store_locally = true, -- Should save stats to file
+  verbose = false, -- Enable debug logging
   sync_endpoint = nil, -- Optional sync endpoint (send data here)
-  sync_interval = 30, -- Backup flush timer in seconds
+  store_locally = true, -- Should save stats to file
+  sync_interval = 30, -- How often to save to file/send to endpoint
   tracking = {
     motions = true,
     modes = true,
