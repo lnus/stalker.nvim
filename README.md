@@ -1,3 +1,7 @@
+<p align='center'>
+    <img src='https://c.tenor.com/3MEoufxx7vIAAAAC/tenor.gif' width='200px'/>
+</p>
+
 <h1 align='center'>
     stalker.nvim
 </h1>
@@ -5,8 +9,6 @@
 <p align='center'>
     Statistics for NeoVim usage
 </p>
-
-<!-- TODO: Add usage gif or something -->
 
 <p align='center'>
     <a href="https://github.com/neovim/neovim/releases/v0.9.0">
@@ -16,6 +18,19 @@
         <img src="https://img.shields.io/github/license/lnus/stalker.nvim?style=flat-square"/>
     </a>
 </p>
+
+<p align='center'>
+    <strong>
+        ⚠️ This is very much a work in progress ⚠️ 
+    </strong>
+</p>
+<p align='center'>
+    <strong>
+        ⚠️ Breaking changes WILL be pushed to main ⚠️ 
+    </strong>
+</p>
+
+<!-- TODO: Add usage gif or something -->
 
 ## Features
 
@@ -78,7 +93,7 @@ Alternatively
 {
     'lnus/stalker.nvim',
     config = function()
-      require('stalker').setup {} -- config goes here
+        require('stalker').setup {} -- config goes here
     end,
 },
 ```
