@@ -10,7 +10,6 @@ local totals_path = vim.fs.joinpath(storage_path, 'totals.json')
 local MAX_RETRIES = 3
 local sync_failures = 0
 local halt_sync = false
-local last_sync = os.time()
 local current_session_id =
   string.format('%s_%s', os.date '%Y%m%d_%H%M%S', vim.fn.getpid())
 
@@ -110,7 +109,7 @@ function M.sync_to_endpoint(data)
   attempt_sync(0)
 end
 
-local function sync_stats(stats, event_type)
+function M.sync_stats(stats, event_type)
   if config.store_locally then
     M.save_session(stats)
   end
@@ -142,7 +141,7 @@ function M.init()
         interval,
         vim.schedule_wrap(function()
           local current_stats = require('stalker.stats').get_stats()
-          sync_stats(current_stats, 'periodic_sync')
+          M.sync_stats(current_stats, 'periodic_sync')
         end)
       )
     end)

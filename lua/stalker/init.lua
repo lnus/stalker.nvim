@@ -28,17 +28,10 @@ local function setup_autocmds()
     callback = function()
       local current_stats = stats.get_stats()
 
-      if config.store_locally then
-        storage.save_session(current_stats)
-        storage.update_totals(current_stats, totals)
-      end
+      storage.sync_stats(current_stats, 'session_end')
 
-      if config.sync_endpoint then
-        storage.sync_to_endpoint {
-          timestamp = os.time(),
-          stats = current_stats,
-          event_type = 'session_end',
-        }
+      if config.store_locally then
+        storage.update_totals(current_stats, totals)
       end
     end,
   })
