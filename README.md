@@ -37,7 +37,8 @@
 - Live tracking for mode switching
 - Live tracking for (some) motions
 - Store usage statistics to disk
-- Send real-time data to a web endpoint
+- Send periodic sync data to a web endpoint
+- Send realtime data to a web endpoint
 
 ### Tracked data
 
@@ -66,15 +67,18 @@ Available commands:
 - `:Stalker` - Show current session statistics
 - `:StalkerTotals` - Show total statistics
 - `:StalkerResetSync` - Reset web sync state after failures
+- `:StalkerResetRlSync` - Reset live sync state after failure
 
 ### Troubleshooting
 
 - If web sync fails, use `:StalkerResetSync` to reset the sync state
+- If live sync fails, use `:StalkerResetRlSync` to reset the sync state
 - Check `:messages` for debug output when `verbose = true`
 
 ## TODO: Requirements
 
-- NeoVim >= v0.9.0 (i need to double check this)
+- NeoVim >= v0.9.0 (I need to double check this)
+- cURL, I guess. For some things.
 
 ## Installation
 
@@ -98,7 +102,7 @@ Alternatively
 },
 ```
 
-## Customization
+## Configuration
 
 These options can all be passed through `opts` if using [lazy.nvim](https://github.com/folke/lazy.nvim)
 
@@ -107,7 +111,7 @@ require('stalker').setup{
     -- These are the default config values
     verbose = false, -- Enable debug logging
 
-    -- Storage
+    -- Storage (Will probably be moved into sub-table)
     store_locally = true, -- Should save stats to file
     sync_interval = 30, -- Interval for saving to file/send to endpoint
     sync_endpoint = nil, -- Optional web sync endpoint
@@ -116,6 +120,14 @@ require('stalker').setup{
     tracking = {
         motions = true,
         modes = true,
+    },
+
+    -- Realtime
+    realtime = {
+        enabled = false, -- What it says on the tin
+        sync_endpoint = nil, -- Realtime sync endpoint
+        sync_delay = 200, -- How often to flush&&send buffer in ms
+        max_buffer_size = 10, -- Force flush&&send buffer if this big
     },
 }
 ```
@@ -130,20 +142,55 @@ in the `stalker` directory.
 Session stats and the total of all session stats will be
 stored in the `json` format.
 
-### Web endpoint
+### Realtime web endpoint
 
 > Note to self: Add config to pass additional headers, for auth etc.
 
-Data will be curled to the endpoint following.
+To set up periodic data syncing, structure config like this:
 
-```bash
-curl
-    -X POST
-    -H 'Content-Type: application/json'
-    -d json.encode(data)
+```lua
+require('stalker').setup {
+    realtime = {
+        enabled = true,
+        sync_endpoint = 'WEB_ENDPOINT',
+    },
+}
 ```
 
-#### Example endpoint (FastAPI)
+#### Example consumer endpoint (FastAPI)
+
+```python
+@app.post("/live")
+async def receive_live(request: Request):
+    # Read the raw body data and decode to string
+    raw_data = await request.body()
+    data_str = raw_data.decode("utf-8", errors="replace").strip()
+
+    # Split the events by delim (newline)
+    events = data_str.split("\n") if data_str else []
+
+    print("\n=== Stalker Update ===")
+    print(f"Received {len(events)} ({len(raw_data)} bytes) event(s):")
+    for event in events:
+        print(f"Event: {event}")
+    print("======================\n")
+
+    return {"status": "ok"}
+```
+
+### Periodic web endpoint
+
+> Note to self: Add config to pass additional headers, for auth etc.
+
+To set up periodic data syncing, structure config like this:
+
+```lua
+require('stalker').setup {
+    sync_endpoint = 'WEB_ENDPOINT'
+}
+```
+
+#### Example consumer endpoint (FastAPI)
 
 ```python
 @app.post("/stalker")
@@ -160,6 +207,28 @@ async def receive_stats(request: Request):
 
     return {"status": "ok"}
 ```
+
+## TODO
+
+- [ ] feat: Add tracking for all modes
+- [ ] feat: Add config for custom tracking
+- [ ] feat: Add optional command tracking
+  - This could expose data, so:
+    - Make it off by default
+    - Track only base command?
+- [ ] feat: Add event types, and send those as well
+  - Change event: Mode changes (Instead of sending n_to_i)
+  - Motion event: Motion keys (Currently only event)
+  - BufEnter event: When entering a buffer, send filetype?
+  - VimEnter/Session start event (just send on plugin init)
+  - VimLeave/Session end event (I already autocmd this)
+- [ ] perf: Double check the perf of event buffer
+  - I feel like just posting to an endpoint over and over isn't... great.
+  - If event buffer feels nice to use,
+    we can use that for persitent data too, rather than a periodic timer.
+    So everything registers as an event and then we match over config to
+    decide if to write to file, send realtime data or big sync to endpoint.
+- [ ] refactor: Update file structure of repo
 
 ## License
 

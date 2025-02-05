@@ -9,6 +9,12 @@ M.config = {
     motions = true,
     modes = true,
   },
+  realtime = { -- TODO: Separate out storage into subconfig too
+    enabled = false,
+    sync_endpoint = nil, -- Realtime sync endpoint
+    sync_delay = 200, -- How often to flush&&send buffer in ms
+    max_buffer_size = 10, -- Force flush&&send buffer if this big
+  },
 }
 
 -- inspo from https://github.com/m4xshen/hardtime.nvim/tree/main

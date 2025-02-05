@@ -20,6 +20,13 @@ local function setup_commands()
   vim.api.nvim_create_user_command('StalkerResetSync', function()
     storage.reset_sync_state(true)
   end, { desc = 'Reset stalker sync state after failures' })
+
+  -- Kinda janky command, but it's just for use if live sync fails.
+  vim.api.nvim_create_user_command('StalkerResetRlSync', function()
+    if config.realtime.sync_endpoint then
+      config.realtime.enabled = true
+    end
+  end, { desc = 'Reset stalker sync state after failures' })
 end
 
 -- TODO: Put into augroup as in stats.lua+86
