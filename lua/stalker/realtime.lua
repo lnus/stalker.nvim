@@ -5,6 +5,7 @@ local config = require('stalker.config').config
 
 M.ws_chan = nil
 
+---@class Event
 M.Event = {
   ModeChange = 'mode_change',
   Motion = 'motion',
@@ -12,6 +13,11 @@ M.Event = {
   VimEnter = 'session_start',
   VimLeave = 'session_end',
 }
+
+local EventValues = {}
+for _, v in pairs(M.Event) do
+  EventValues[v] = true
+end
 
 function M.start_sync()
   if M.ws_chan then
@@ -55,12 +61,21 @@ function M.stop_sync()
   vim.fn.jobstop(M.ws_chan)
 end
 
-function M.send_data(data)
+---@param event string
+---@param data string
+function M.send_data(event, data)
   if not M.ws_chan then
     return
   end
 
-  vim.fn.chansend(M.ws_chan, data .. '\n')
+  if not EventValues[event] then
+    util.error('Invalid event type: ' .. event)
+    return
+  end
+
+  local message = '[' .. event .. '] ' .. data
+
+  vim.fn.chansend(M.ws_chan, message .. '\n')
 end
 
 return M
