@@ -28,7 +28,6 @@ local function flush_events()
   M.event_buffer = {}
   reset_timer()
 
-  -- TODO: Add support for headers in config
   local cmd = {
     'curl',
     '-X',
@@ -39,6 +38,13 @@ local function flush_events()
     payload,
     config.realtime.sync_endpoint,
   }
+
+  if config.realtime.headers then
+    for key, value in pairs(config.realtime.headers) do
+      table.insert(cmd, '-H')
+      table.insert(cmd, key .. ': ' .. value)
+    end
+  end
 
   vim.fn.jobstart(cmd, {
     on_exit = function(_, code)

@@ -144,15 +144,16 @@ stored in the `json` format.
 
 ### Realtime web endpoint
 
-> Note to self: Add config to pass additional headers, for auth etc.
-
-To set up periodic data syncing, structure config like this:
+To set up realtime data syncing, structure config like this:
 
 ```lua
 require('stalker').setup {
     realtime = {
         enabled = true,
-        sync_endpoint = 'WEB_ENDPOINT',
+        sync_endpoint = 'http://localhost:8000/live',
+        headers = {
+            Authorization = 'Secret-Token',
+        },
     },
 }
 ```
