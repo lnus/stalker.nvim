@@ -3,84 +3,64 @@ local M = {}
 local util = require 'stalker.util'
 local config = require('stalker.config').config
 
-M.event_buffer = {}
-M.timer = nil
+M.ws_chan = nil
 
-local function reset_timer()
-  if M.timer then
-    M.timer:stop()
-    M.timer:close()
-    M.timer = nil
-  end
-end
+M.Event = {
+  ModeChange = 'mode_change',
+  Motion = 'motion',
+  BufEnter = 'buf_enter',
+  VimEnter = 'session_start',
+  VimLeave = 'session_end',
+}
 
-local function flush_events()
-  if #M.event_buffer == 0 then
+function M.start_sync()
+  if M.ws_chan then
+    util.warn 'Tried opening channel when already exists'
     return
   end
 
-  local payload = ''
-  -- TODO: Better delimiting scheme I think
-  for _, ev in ipairs(M.event_buffer) do
-    payload = payload .. ev .. '\n'
-  end
-
-  M.event_buffer = {}
-  reset_timer()
-
   local cmd = {
-    'curl',
-    '-X',
-    'POST',
-    '-H',
-    'Content-Type: application/octet-stream',
-    '--data-binary',
-    payload,
-    config.realtime.sync_endpoint,
+    'websocat',
+    config.realtime.ws_endpoint,
   }
 
-  if config.realtime.headers then
-    for key, value in pairs(config.realtime.headers) do
-      table.insert(cmd, '-H')
-      table.insert(cmd, key .. ': ' .. value)
-    end
-  end
-
-  vim.fn.jobstart(cmd, {
-    on_exit = function(_, code)
-      if code ~= 0 then
-        util.error('Realtime sync failed with code ' .. code .. ' disabling.')
-        config.realtime.enabled = false
+  -- TODO: Better error handling
+  M.ws_chan = vim.fn.jobstart(cmd, {
+    on_stderr = function(_, data)
+      if data and #data > 0 then
+        -- TODO: Move to util.error? Idk they're very verbose
+        util.debug('websocat stderr: ' .. vim.inspect(data))
       end
+    end,
+    on_exit = function(_, code, signal)
+      if code ~= 0 and code ~= 143 then -- 143 happens on clean exit
+        util.error(
+          'websocat exited with code: '
+            .. code
+            .. ', signal: '
+            .. (signal or 'none')
+        )
+      end
+      M.ws_chan = nil
     end,
   })
 end
 
-local function schedule_flush()
-  reset_timer()
-  M.timer = vim.uv.new_timer()
-  M.timer:start(
-    config.realtime.sync_delay,
-    0,
-    vim.schedule_wrap(function()
-      flush_events()
-    end)
-  )
+function M.stop_sync()
+  if not M.ws_chan then
+    util.warn 'Tried stopping non-existant channel'
+    return
+  end
+
+  vim.fn.jobstop(M.ws_chan)
 end
 
-function M.queue_event(event)
-  if not (config.realtime.sync_endpoint and config.realtime.enabled) then
+function M.send_data(data)
+  if not M.ws_chan then
     return
   end
 
-  table.insert(M.event_buffer, event)
-
-  if #M.event_buffer >= config.realtime.max_buffer_size then
-    flush_events()
-    return
-  end
-
-  schedule_flush()
+  vim.fn.chansend(M.ws_chan, data .. '\n')
 end
 
 return M

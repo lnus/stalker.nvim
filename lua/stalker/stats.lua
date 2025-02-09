@@ -46,7 +46,7 @@ local function track_mode_change()
   -- create the transition and increment that
   if new_mode ~= stats.current_mode then
     local transition = stats.current_mode .. '_to_' .. new_mode
-    realtime.queue_event(transition)
+    realtime.send_data(transition)
     stats.mode_switches[transition] = (stats.mode_switches[transition] or 0) + 1
     stats.current_mode = new_mode
   end
@@ -72,7 +72,7 @@ local function track_and_preserve(motion_type, key, mode)
   local existing = get_existing_mapping(key, mode)
 
   vim.keymap.set(mode, key, function()
-    realtime.queue_event(key) -- TODO: Do this cleaner
+    realtime.send_data(key) -- TODO: Do this cleaner
     track_motion(motion_type, key)
     return existing
   end, { expr = true })

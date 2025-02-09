@@ -12,7 +12,7 @@ M.config = {
   realtime = { -- TODO: Separate out storage into subconfig too
     enabled = false,
     headers = nil, -- extra headers to send to the endpoint
-    sync_endpoint = nil, -- Realtime sync endpoint
+    ws_endpoint = nil, -- Websocket sync endpoint
     sync_delay = 200, -- How often to flush&&send buffer in ms
     max_buffer_size = 10, -- Force flush&&send buffer if this big
   },

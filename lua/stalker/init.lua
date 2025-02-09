@@ -5,6 +5,7 @@ local util = require 'stalker.util'
 local stats = require 'stalker.stats'
 local storage = require 'stalker.storage'
 local config = require('stalker.config').config
+local realtime = require 'stalker.realtime'
 
 local totals = nil
 
@@ -21,12 +22,19 @@ local function setup_commands()
     storage.reset_sync_state(true)
   end, { desc = 'Reset stalker sync state after failures' })
 
-  -- Kinda janky command, but it's just for use if live sync fails.
-  vim.api.nvim_create_user_command('StalkerResetRlSync', function()
-    if config.realtime.sync_endpoint then
-      config.realtime.enabled = true
+  -- TODO: better commands for ws
+  vim.api.nvim_create_user_command('WsClose', function()
+    realtime.stop_sync()
+  end, { desc = 'Close the websocket channel' })
+
+  vim.api.nvim_create_user_command('WsOpen', function()
+    if realtime.ws_chan then
+      util.warn 'Websocket channel already open'
+      return
     end
-  end, { desc = 'Reset stalker sync state after failures' })
+
+    realtime.start_sync()
+  end, { desc = 'Open the websocket channel' })
 end
 
 -- TODO: Put into augroup as in stats.lua+86
@@ -34,6 +42,8 @@ local function setup_autocmds()
   vim.api.nvim_create_autocmd('VimLeavePre', {
     callback = function()
       local current_stats = stats.get_stats()
+
+      realtime.stop_sync()
 
       storage.sync_stats(current_stats, 'session_end')
 
@@ -46,6 +56,7 @@ local function setup_autocmds()
   vim.api.nvim_create_autocmd('UIEnter', {
     callback = function()
       vim.defer_fn(function()
+        realtime.start_sync()
         util.debug "i'm watching you... (⊙_⊙)"
       end, 200)
     end,
