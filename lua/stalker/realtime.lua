@@ -74,7 +74,7 @@ end
 --- @param data string
 function M.send_event(event, data)
   if not M.websocat_pid then
-    util.warn 'Tried sending event without active channel'
+    -- util.warn 'Tried sending event without active channel'
     return
   end
 
