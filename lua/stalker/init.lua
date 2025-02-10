@@ -28,7 +28,7 @@ local function setup_commands()
   end, { desc = 'Close the websocket channel' })
 
   vim.api.nvim_create_user_command('WsOpen', function()
-    if realtime.ws_chan then
+    if realtime.websocat_pid then
       util.warn 'Websocket channel already open'
       return
     end
